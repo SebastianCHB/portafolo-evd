@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maqueta de Base de Datos - Dpto. Calidad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Librería para el Zoom del Diagrama -->
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    
+    <style>
+        :root {
+            /* Tema Claro Premium (Letras Negras) */
+            --bg-color: #f1f5f9;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --text-main: #0f172a; 
+            --text-muted: #475569;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --table-header: rgba(37, 99, 235, 0.08);
+            --table-border: rgba(0, 0, 0, 0.05);
+            --glow: 0 12px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 100% 0%, #e2e8f0 0%, transparent 40%),
+                              radial-gradient(circle at 0% 100%, #cbd5e1 0%, transparent 40%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 3rem 1rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: fadeIn 1s ease-out;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #2563eb, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02), var(--glow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slideUp 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .card:nth-child(2) { animation-delay: 0.1s; }
+        .card:nth-child(3) { animation-delay: 0.2s; }
+        .card:nth-child(4) { animation-delay: 0.3s; }
+        .card:nth-child(5) { animation-delay: 0.4s; }
+
+        h2 {
+            font-size: 1.8rem;
+            color: var(--text-main);
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 4px;
+        }
+
+        /* Contenedor del Diagrama Global preparado para Zoom */
+        .diagram-wrapper-large {
+            position: relative;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            height: 700px; /* Altura fija para el área de zoom */
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+            margin-bottom: 2rem;
+        }
+
+        /* Contenedor del Diagrama Pequeño por Módulo */
+        .diagram-wrapper-small {
+            position: relative;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            height: 400px; /* Altura fija para el área de zoom */
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+            margin-bottom: 2rem;
+        }
+
+        .diagram-hint {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-hover);
+            background: rgba(37, 99, 235, 0.1);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            z-index: 10;
+            pointer-events: none; /* Para no estorbar el click */
+        }
+
+        /* Ocultamos temporalmente hasta que renderice */
+        .mermaid {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--table-border);
+        }
+
+        th {
+            background-color: var(--table-header);
+            color: var(--accent-hover);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        th:first-child { border-top-left-radius: 8px; }
+        th:last-child { border-top-right-radius: 8px; }
+
+        tr {
+            transition: background-color 0.2s;
+        }
+
+        tr:hover td {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        code {
+            background: rgba(0, 0, 0, 0.05);
+            color: #7c3aed;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Esquema de Base de Datos</h1>
+            <p class="subtitle">Arquitectura estructurada y dividida por módulos para mayor claridad.</p>
+        </header>
+
+        <!-- MODULO 1 -->
+        <div class="card">
+            <h2>1. Usuarios y Estructura Organizacional</h2>
+            <p>Controla los usuarios del sistema, a qué áreas pertenecen y sus grupos de trabajo.</p>
+            
+            <div class="diagram-wrapper-small">
+                <div class="diagram-hint">Módulo Usuarios (Usa el scroll para hacer zoom)</div>
+                <div class="mermaid">
+                    erDiagram
+                        users {
+                            bigint id PK
+                            string nombre
+                            string email UK
+                            bigint area_proceso_id FK
+                        }
+                        areas {
+                            bigint id PK
+                            string nombre
+                            bigint responsable_id FK
+                        }
+                        grupos_trabajo {
+                            bigint id PK
+                            string nombre UK
+                        }
+                        usuario_grupo {
+                            bigint user_id PK, FK
+                            bigint grupo_id PK, FK
+                            boolean can_ver
+                        }
+
+                        users }|--|| areas : "Pertenece a (area_proceso_id)"
+                        areas }|--|| users : "Tiene un responsable"
+                        usuario_grupo }|--|| users : "user_id"
+                        usuario_grupo }|--|| grupos_trabajo : "grupo_id"
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tabla</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>users</strong></td>
+                        <td>Almacena los usuarios del sistema, credenciales y flags de permisos generales.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>areas</strong></td>
+                        <td>Departamentos o áreas organizativas con reglas de edición.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>grupos_trabajo</strong></td>
+                        <td>Catálogo para agrupar usuarios bajo un rol colectivo.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>usuario_grupo</strong></td>
+                        <td>Asocia a un usuario con uno o más grupos, guardando permisos específicos.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- MODULO 2 -->
+        <div class="card">
+            <h2>2. Gestión Documental (Bóvedas y Fichas)</h2>
+            <p>El núcleo de la aplicación: el almacenamiento lógico de documentos (Bóvedas), su tipología y las Fichas (los documentos per sé).</p>
+
+            <div class="diagram-wrapper-small">
+                <div class="diagram-hint">Módulo Documental</div>
+                <div class="mermaid">
+                    erDiagram
+                        bovedas {
+                            bigint id PK
+                            string nombre UK
+                            bigint boveda_siguiente_id FK
+                            bigint responsable_id FK
+                        }
+                        tipos_ficha {
+                            bigint id PK
+                            string nombre UK
+                            string familia
+                        }
+                        fichas {
+                            bigint id PK
+                            bigint tipo_ficha_id FK
+                            bigint user_id FK
+                            bigint boveda_id FK
+                            string clave
+                            string titulo
+                        }
+                        tipo_ficha_grupo {
+                            bigint tipo_ficha_id PK, FK
+                            bigint grupo_id PK, FK
+                        }
+                        tipo_ficha_boveda {
+                            bigint tipo_ficha_id PK, FK
+                            bigint boveda_id PK, FK
+                        }
+
+                        bovedas }|--|o bovedas : "Secuencia (boveda_siguiente)"
+                        fichas }|--|| tipos_ficha : "Es de tipo"
+                        fichas }|--|| bovedas : "Almacenada en"
+                        tipo_ficha_grupo }|--|| tipos_ficha : "tipo_ficha"
+                        tipo_ficha_boveda }|--|| tipos_ficha : "tipo_ficha"
+                        tipo_ficha_boveda }|--|| bovedas : "boveda"
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tabla</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>bovedas</strong></td>
+                        <td>Contenedores lógicos de fichas con reglas visuales y de flujo (secuencias).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>tipos_ficha</strong></td>
+                        <td>Catálogo de configuraciones de formulario (ej. Procedimientos, Manuales) con esquema JSON.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>fichas</strong></td>
+                        <td>El registro documental principal. Vincula a un usuario, a una bóveda y a un tipo de ficha.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- MODULO 3 -->
+        <div class="card">
+            <h2>3. Seguridad Avanzada</h2>
+            <p>Control granular (Matriz Triple) que define qué puede hacer exactamente un Usuario, actuando bajo un Grupo, dentro de una Bóveda específica.</p>
+
+            <div class="diagram-wrapper-small">
+                <div class="diagram-hint">Módulo Seguridad</div>
+                <div class="mermaid">
+                    erDiagram
+                        perfiles_seguridad {
+                            bigint user_id PK, FK
+                            bigint grupo_id PK, FK
+                            bigint boveda_id PK, FK
+                            boolean can_ver
+                            boolean can_registrar
+                            boolean can_actualizar
+                        }
+                        users {
+                            bigint id PK
+                        }
+                        grupos_trabajo {
+                            bigint id PK
+                        }
+                        bovedas {
+                            bigint id PK
+                        }
+
+                        perfiles_seguridad }|--|| users : "Usuario asignado"
+                        perfiles_seguridad }|--|| grupos_trabajo : "En representación del Grupo"
+                        perfiles_seguridad }|--|| bovedas : "Sobre esta Bóveda"
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tabla</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>perfiles_seguridad</strong></td>
+                        <td>Establece permisos específicos de lectura, escritura o actualización uniendo 3 variables: Usuario, Grupo y Bóveda.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- MODULO 4 -->
+        <div class="card">
+            <h2>4. Foliación Automática</h2>
+            <p>Administración de contadores (folios) y a qué elementos están vinculados.</p>
+
+            <div class="diagram-wrapper-small">
+                <div class="diagram-hint">Módulo Foliación</div>
+                <div class="mermaid">
+                    erDiagram
+                        foliadores {
+                            bigint id PK
+                            string nombre UK
+                            string prefijo
+                            string sufijo
+                            int comienza_en
+                        }
+                        foliador_tipo_ficha {
+                            bigint foliador_id PK, FK
+                            bigint tipo_ficha_id PK, FK
+                        }
+                        foliador_grupo {
+                            bigint foliador_id PK, FK
+                            bigint grupo_id PK, FK
+                        }
+
+                        foliador_tipo_ficha }|--|| foliadores : "foliador_id"
+                        foliador_grupo }|--|| foliadores : "foliador_id"
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tabla</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>foliadores</strong></td>
+                        <td>Lleva el conteo de los números de registro, secuencias, prefijos y pasos.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>foliador_tipo_ficha</strong></td>
+                        <td>Tabla pivote para vincular un foliador a un tipo de ficha específico.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>foliador_grupo</strong></td>
+                        <td>Tabla pivote para asignar un foliador a un grupo de trabajo.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- VISIÓN GLOBAL -->
+        <div class="card">
+            <h2>Diagrama Completo (Todas las relaciones)</h2>
+            <p>Para aquellos casos donde necesites ver cómo interactúa el sistema en su totalidad.</p>
+            <div class="diagram-wrapper-large">
+                <div class="diagram-hint">Visión Global (Usa Zoom)</div>
+                <div class="mermaid">
+                    erDiagram
+                        %% Tablas Principales
+                        users { bigint id PK }
+                        areas { bigint id PK }
+                        grupos_trabajo { bigint id PK }
+                        bovedas { bigint id PK }
+                        tipos_ficha { bigint id PK }
+                        fichas { bigint id PK }
+                        foliadores { bigint id PK }
+
+                        %% Pivotes
+                        usuario_grupo { bigint user_id PK bigint grupo_id PK }
+                        perfiles_seguridad { bigint user_id PK bigint grupo_id PK bigint boveda_id PK }
+                        tipo_ficha_grupo { bigint tipo_ficha_id PK bigint grupo_id PK }
+                        tipo_ficha_boveda { bigint tipo_ficha_id PK bigint boveda_id PK }
+                        foliador_tipo_ficha { bigint foliador_id PK bigint tipo_ficha_id PK }
+                        foliador_grupo { bigint foliador_id PK bigint grupo_id PK }
+
+                        %% Relaciones
+                        users }|--|| areas : "area_proceso_id"
+                        areas }|--|| users : "responsable_id"
+                        bovedas }|--|| users : "responsable_id"
+                        bovedas }|--|o bovedas : "boveda_siguiente_id"
+                        usuario_grupo }|--|| users : "user_id"
+                        usuario_grupo }|--|| grupos_trabajo : "grupo_id"
+                        perfiles_seguridad }|--|| users : "user_id"
+                        perfiles_seguridad }|--|| grupos_trabajo : "grupo_id"
+                        perfiles_seguridad }|--|| bovedas : "boveda_id"
+                        fichas }|--|| tipos_ficha : "tipo_ficha_id"
+                        fichas }|--|o users : "user_id"
+                        fichas }|--|| bovedas : "boveda_id"
+                        tipo_ficha_grupo }|--|| tipos_ficha : "tipo_ficha_id"
+                        tipo_ficha_grupo }|--|| grupos_trabajo : "grupo_id"
+                        tipo_ficha_boveda }|--|| tipos_ficha : "tipo_ficha_id"
+                        tipo_ficha_boveda }|--|| bovedas : "boveda_id"
+                        foliador_tipo_ficha }|--|| foliadores : "foliador_id"
+                        foliador_tipo_ficha }|--|| tipos_ficha : "tipo_ficha_id"
+                        foliador_grupo }|--|| foliadores : "foliador_id"
+                        foliador_grupo }|--|| grupos_trabajo : "grupo_id"
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Cargar Mermaid.js -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        
+        mermaid.initialize({ 
+            startOnLoad: false, 
+            theme: 'default' 
+        });
+
+        // Ejecutar el renderizado y luego inicializar el Zoom en TODOS los diagramas
+        mermaid.run({ querySelector: '.mermaid' }).then(() => {
+            const svgElements = document.querySelectorAll('.mermaid svg');
+            
+            svgElements.forEach((svgElement, index) => {
+                // Forzar que el SVG tome todo el contenedor
+                svgElement.style.maxWidth = 'none';
+                svgElement.style.width = '100%';
+                svgElement.style.height = '100%';
+
+                // Inicializar SVG-Pan-Zoom para cada gráfica
+                window['panZoom' + index] = svgPanZoom(svgElement, {
+                    zoomEnabled: true,
+                    controlIconsEnabled: true, 
+                    fit: true,
+                    center: true,
+                    minZoom: 0.1,
+                    maxZoom: 10,
+                    zoomScaleSensitivity: 0.3
+                });
+            });
+        });
+    </script>
+</body>
+</html>
